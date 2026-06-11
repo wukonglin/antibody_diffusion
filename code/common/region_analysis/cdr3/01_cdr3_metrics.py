@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 """
 01_cdr3_metrics.py
-针对所有 config(plain DPLM, swept DPLM, LD4LG w=1/1.5/2/3/5)算:
+For every config (plain DPLM, swept DPLM, LD4LG w=1/1.5/2/3/5) compute:
 
-   CDR3 4-gram diversity(VH CDR3, VL CDR3, 合并)
-   Full-sequence 4-gram diversity(作为对照)
-   CDR3 长度分布(mean, std, min, max, percentiles)
-   CDR3 提取成功率(模型生成的序列里有多少 % 能找到 conserved motif)
+   CDR3 4-gram diversity (VH CDR3, VL CDR3, combined)
+   Full-sequence 4-gram diversity (as a baseline)
+   CDR3 length distribution (mean, std, min, max, percentiles)
+   CDR3 extraction success rate (fraction of generated seqs with a conserved motif)
 
-为啥这些 metric 有意义:
-  - Full-seq diversity 在抗体上被 framework 区域主导(因为同一 V-family 的
-    framework 几乎一样),掩盖了真正的 model behavior 差异。
-  - CDR3 是真正 hypervariable 的区域,是 binding specificity 来源,
-    bio PhD / 真实 antibody design 都最关心这块。
-  - 如果 LD4LG / DPLM 在 framework 上几乎一样(都 trivially 学会),
-    真正的 model 区别就在 CDR3 上 — 这是把 §4 现有 Pareto trade-off
-    upgrade 成 region-aware 的关键。
+Why these metrics matter:
+  - Full-sequence diversity is dominated by the framework regions (the framework
+    is nearly identical within a V-family), which masks the real differences in
+    model behavior.
+  - CDR3 is the truly hypervariable region and the source of binding specificity;
+    it is what antibody design cares about most.
+  - If LD4LG / DPLM are nearly identical on the framework (both learn it trivially),
+    the real model difference lives in CDR3 — this is what turns the full-sequence
+    Pareto trade-off into a region-aware one.
 
-输出:
-  results/cdr3_metrics.json — 完整 numerical
-  控制台 — 人读得懂的对比表
+Output:
+  results/cdr3_metrics.json — full numerical results
+  console               — a human-readable comparison table
 
-用法:
+Usage:
   python 01_cdr3_metrics.py
 """
 
@@ -33,11 +34,11 @@ from pathlib import Path
 
 import numpy as np
 
-# 把 lib_cdr3.py 加进 path
+# add lib_cdr3.py to the import path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_cdr3 import extract_cdr3_pair, parse_fasta
 
-# Config: 所有要分析的 config
+# Config: all configs to analyze
 
 RESULTS_ROOT = Path("/Users/susi/Documents/Claude/Projects/DL Final/ab_ld4lg_results")
 OUTPUT_DIR = Path(__file__).parent / "results"
@@ -101,7 +102,7 @@ def analyze_config(name, samples_dir_name, display):
     """Run all CDR3 metrics for one config, return dict."""
     samples_dir = RESULTS_ROOT / samples_dir_name
     if not samples_dir.exists():
-        print(f"  ️  {samples_dir} not found — skipping")
+        print(f"  {samples_dir} not found — skipping")
         return None
 
     print(f"\n-> {display}")
@@ -119,7 +120,7 @@ def analyze_config(name, samples_dir_name, display):
     for cell in CELLS:
         fpath = samples_dir / f"{cell}.fasta"
         if not fpath.exists():
-            print(f"   ️  missing cell file: {cell}")
+            print(f"   missing cell file: {cell}")
             continue
         for _, seq in parse_fasta(str(fpath)):
             n_total += 1
@@ -167,7 +168,7 @@ def analyze_config(name, samples_dir_name, display):
         "vl_cdr3_length": length_stats(vl_lens),
     }
 
-    # 简短控制台输出
+    # short console summary
     print(f"   {n_total} sequences, CDR3 extracted: {n_extract_ok} ({100*n_extract_ok/max(n_total,1):.1f}%)")
     print(f"   4-gram diversity:")
     print(f"      full seq    : {result['div_4gram_full_seq']:.4f}")

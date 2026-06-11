@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 aida_extract_train_subset.py — RUN ON AIDA
-从 train.metadata.tsv 随机抽 50,000 条 paired antibody sequence
-存成 FASTA,然后 scp 回 Mac 用于 Hamming distance distribution.
+Randomly sample 50,000 paired antibody sequences from train.metadata.tsv, save
+them as FASTA, then scp back to the Mac for the Hamming-distance distribution.
 
-为啥 50K:
-  - Full 训练集 ~1.74M 太大;100K 也 OK 但 ~25MB;50K 已经够 stable
-  - 跟生成集 9216 比足够 represent training distribution
-  - scp 回 Mac 约 12 MB,几秒钟
+Why 50K:
+  - the full training set (~1.74M) is too large; 100K also works but is ~25MB;
+    50K is already stable enough.
+  - 50K is enough to represent the training distribution relative to the 9216
+    generated sequences.
+  - scp back to the Mac is ~12 MB, a few seconds.
 """
 
 import csv
@@ -22,7 +24,7 @@ print(f"Reading {TSV_PATH}...")
 all_seqs = []
 with open(TSV_PATH, newline="") as f:
     reader = csv.DictReader(f, delimiter="\t")
-    # 找 pair_input_seq 列 (column name 应该叫这个或类似的)
+    # find the paired-sequence column (named pair_input_seq or similar)
     fieldnames = reader.fieldnames
     seq_col = None
     for candidate in ["pair_input_seq", "paired_seq", "sequence", "seq"]:

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
 02_plot_cdr3_metrics.py
-从 01_cdr3_metrics.py 产生的 JSON 画 3 张 office-hour-ready figures:
+From the JSON produced by 01_cdr3_metrics.py, draw 3 figures:
 
-  Figure 1: LD4LG CFG plateau at CDR3 level (the headline)
+  Figure 1: LD4LG CFG plateau at the CDR3 level (the headline)
             - x: CFG weight w
             - y: VH/VL CDR3 4-gram diversity
-            - DPLM-default + DPLM-tuned 作 horizontal reference lines
+            - DPLM-default + DPLM-tuned as horizontal reference lines
 
   Figure 2: CDR3 vs full-seq diversity decomposition
-            - 横向 bar chart,7 configs,full-seq 和 CDR3 并列
-            - 视觉证明 "framework 掩盖了真正的 model behavior"
+            - grouped bar chart, 7 configs, full-seq next to CDR3
+            - visual proof that "the framework masks real model behavior"
 
   Figure 3: CDR3 length distribution
-            - histogram overlay,3 个 main config
+            - histogram overlay, 3 main configs
 
-输出:
+Output:
   results/fig1_ld4lg_cfg_plateau_cdr3.{png,pdf}
   results/fig2_cdr3_vs_fullseq_diversity.{png,pdf}
   results/fig3_cdr3_length_distribution.{png,pdf}
@@ -64,7 +64,7 @@ def plot_fig1_cfg_plateau(results):
                 label=f"DPLM tuned   = {dplm_tuned_vh:.3f}")
     ax1.plot(w_values, vh_cdr3, marker="o", markersize=10, color="#1f77b4",
              linewidth=2.5, label="LD4LG CFG sweep")
-    # 标注 plateau range
+    # annotate plateau range
     vh_range_pct = 100 * (max(vh_cdr3) - min(vh_cdr3)) / min(vh_cdr3)
     ax1.annotate(f"LD4LG range: only +{vh_range_pct:.1f}%\n(plateau confirmed at full 18-cell)",
                  xy=(3, np.mean(vh_cdr3)), xytext=(1.5, 0.36),
@@ -133,7 +133,7 @@ def plot_fig2_cdr3_vs_fullseq(results):
     b2 = ax.bar(x,     vh_c, w, label="VH CDR3",       color="#1f77b4")
     b3 = ax.bar(x + w, vl_c, w, label="VL CDR3",       color="#ff7f0e")
 
-    # 在 CDR3 bar 上标多少倍 of full-seq
+    # annotate each CDR3 bar with its fold-increase over full-seq
     for i, name in enumerate(order):
         ratio_vh = vh_c[i] / max(full[i], 1e-6)
         ax.text(x[i],        vh_c[i] + 0.01, f"×{ratio_vh:.0f}", ha="center", fontsize=9, color="#1f77b4")

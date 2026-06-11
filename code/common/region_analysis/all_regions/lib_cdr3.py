@@ -2,33 +2,34 @@
 CDR3 extraction utility — splits a paired antibody (VH + linker + VL) into
 its two CDR3 regions using conserved motif anchoring.
 
-抗体 CDR3 的位置依赖两个保守 motif:
-  - Heavy chain (VH) CDR3:夹在 [YQ]YC ... WG[QHRK]G 之间
+CDR3 boundaries are anchored on two conserved motifs:
+  - Heavy chain (VH) CDR3: between [YQ]YC ... WG[QHRK]G
       e.g. "...YYC ARETLFLQVRE... WGQG..."
                 ^CDR3-H starts^                ^ends^
-  - Light chain (VL) CDR3:夹在 [YQ]YC ... FG[QHRK]G 之间
+  - Light chain (VL) CDR3: between [YQ]YC ... FG[QHRK]G
       e.g. "...YYC QQYGSSPLRT FGQG..."
 
-我们没用 IMGT alignment(序列本身没带 gap),所以用 motif 锚定。失败率应该
-< 5%——主要是 high-temperature sampling 偶尔把保守 Cys/Trp/Phe 也改掉的序列。
+No IMGT alignment is used (the sequences carry no gaps), so we rely on motif
+anchoring. Failure rate is < 5% — mostly sequences where high-temperature
+sampling has mutated the conserved Cys/Trp/Phe anchors.
 """
 
 import re
 
-# FR4 起点 motif:
-# Heavy: WG[QRHKM][GA] (典型 WGQG / WGRG)
-# Light: FG[QRGSH][GA] (典型 FGQG / FGGG)
-# 我们用 "last FR4-motif + walk back to nearest C" 算法,而不是
-# anchor 在 YYC——因为 YYC 在 high-diversity sampling 下偶尔会被
-# 改成 AYC / VYC / YHC 之类,导致 regex 失败。
+# FR4-start motif:
+#   Heavy: WG[QRHKM][GA]  (typically WGQG / WGRG)
+#   Light: FG[QRGSH][GA]  (typically FGQG / FGGG)
+# We use "last FR4 motif + walk back to nearest C" rather than anchoring on
+# YYC, because under high-diversity sampling YYC is occasionally mutated to
+# AYC / VYC / YHC etc., which would break a YYC regex.
 HEAVY_END_RE = re.compile(r'WG[QRHKM][GA]')
 LIGHT_END_RE = re.compile(r'FG[QRGSH][GA]')
 
-# CDR3 length sanity bounds (skip 提取结果在这之外的)
+# CDR3 length sanity bounds (extractions outside this range are skipped)
 MIN_CDR3_LEN = 3
 MAX_CDR3_LEN = 35
 
-# 配对抗体的 linker(VH + GGGGSGGGGS + VL)
+# Paired-antibody linker (VH + GGGGSGGGGS + VL)
 LINKER = "GGGGSGGGGS"
 
 def split_vh_vl(paired_seq: str):
@@ -42,8 +43,9 @@ def split_vh_vl(paired_seq: str):
 
 def _find_leftmost_c_in_window(seq: str, end_pos: int):
     """
-    在 [end_pos - MAX_CDR3_LEN, end_pos - MIN_CDR3_LEN] 窗口里
-    找 LEFTMOST C — 这是保守的 pre-CDR3 Cys(避开 CDR3 内部偶尔出现的 Cys)
+    Find the LEFTMOST C in the window [end_pos - MAX_CDR3_LEN, end_pos - MIN_CDR3_LEN].
+    This is the conserved pre-CDR3 Cys (avoids Cys residues occasionally found
+    inside CDR3 itself).
     """
     valid_start = max(0, end_pos - MAX_CDR3_LEN - 2)
     valid_end = end_pos - MIN_CDR3_LEN + 1
@@ -55,15 +57,15 @@ def _find_leftmost_c_in_window(seq: str, end_pos: int):
 def extract_cdr3_heavy(vh_seq: str):
     """
     Extract VH CDR3.
-    Strategy: 找 VH 序列里**最后一个 W**(几乎一定是 FR4 起点的 W),
-    然后向前找 leftmost C(避开 CDR3 内部 Cys).
+    Strategy: find the LAST W in VH (almost always the FR4-start W), then walk
+    back to the leftmost C (avoiding Cys residues inside CDR3).
     """
     # rfind W in VH
     w_pos = vh_seq.rfind('W')
     if w_pos == -1:
         return None
-    # FR4-W 通常离 VH 结尾 8-15 AA(FR4 = WGxGTLVTVSS),如果 W 太靠前(< 50)或者
-    # 太靠尾(< 4 AA from end),很可能不是 FR4-W
+    # FR4-W is usually 8-15 AA from the VH end (FR4 = WGxGTLVTVSS). If W is too
+    # early (< 50) or too close to the end (< 4 AA), it is probably not FR4-W.
     if w_pos < 50 or w_pos > len(vh_seq) - 3:
         return None
     cys_pos = _find_leftmost_c_in_window(vh_seq, w_pos)
@@ -75,16 +77,16 @@ def extract_cdr3_heavy(vh_seq: str):
 def extract_cdr3_light(vl_seq: str):
     """
     Extract VL CDR3.
-    Strategy: 找最后一个 'FG' dipeptide(FR4 起点),walk back to leftmost C.
+    Strategy: find the last 'FG' dipeptide (FR4 start), walk back to leftmost C.
     """
-    # 找最后一个 'F' followed by 'G' (FR4 starts with FG)
+    # find the last 'F' followed by 'G' (FR4 starts with FG)
     fg_pos = -1
     for i in range(len(vl_seq) - 1):
         if vl_seq[i] == 'F' and vl_seq[i+1] == 'G':
             fg_pos = i
     if fg_pos == -1:
         return None
-    # FR4-F 同理:太靠前或太靠尾不像 FR4-F
+    # same guard as heavy: an FR4-F too early or too late is not the real FR4-F
     if fg_pos < 50 or fg_pos > len(vl_seq) - 3:
         return None
     cys_pos = _find_leftmost_c_in_window(vl_seq, fg_pos)
@@ -148,4 +150,3 @@ if __name__ == "__main__":
         print(f"  VL CDR3   : {result['vl_cdr3']} ({len(result['vl_cdr3'])} AA)")
     else:
         print(f"  reason    : {result['reason']}")
-

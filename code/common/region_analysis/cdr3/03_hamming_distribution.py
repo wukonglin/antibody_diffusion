@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 """
 03_hamming_distribution.py
-对每个 config,算每条生成序列到训练集**最近邻**的 Hamming distance,
-然后画分布——比 "exact match yes/no" + "Hamming-3 binary check" 更
-rigorous 的 memorization analysis.
+For each config, compute every generated sequence's Hamming distance to its
+NEAREST training-set neighbor, then plot the distribution. This is a more
+rigorous memorization analysis than "exact match yes/no" + a "Hamming-3 binary
+check".
 
-为啥用 Hamming distance distribution:
-  - 你们 §4 已 check exact match (0/9216) 和 Hamming-3 near-match (0%)
-  - 但这只是 binary 信号 — 不知道模型 距 training distribution **有多远**
-  - 完整 distribution 告诉你:
-      Mass 集中在低 Hamming (e.g. 20-40):接近训练分布(in-distribution)
-      Mass 在高 Hamming (60+):extrapolation 到分布外
-  - 不同 config 的 distribution shape 区分 in-domain interpolation
-    vs out-of-domain exploration — 这是 "diversity" 的另一种 lens
+Why a Hamming distance distribution:
+  - Exact match (0/9216) and Hamming-3 near-match (0%) were already checked, but
+    those are only binary signals — they do not tell us how FAR from the training
+    distribution the samples are.
+  - The full distribution does:
+      mass at low Hamming  (e.g. 20-40): close to the training distribution (in-distribution)
+      mass at high Hamming (60+):        extrapolation out of distribution
+  - The distribution shape distinguishes in-domain interpolation from
+    out-of-domain exploration — another lens on "diversity".
 
-Hamming distance 定义在等长序列上,所以我们做 length-matched comparison:
-  - 对每条 generated seq (长度 L):
-      只 跟训练集里长度 = L 的序列比 Hamming
-      取 min Hamming 作为 "距 training set 最近的距离"
+Hamming distance is defined on equal-length sequences, so we do a length-matched
+comparison:
+  - for each generated seq (length L):
+      compare Hamming only against training seqs of length L
+      take the min Hamming as the distance to the nearest training neighbor
 
-Compute cost: 50K 训练 / 平均长度 bucket size 3K × 9216 generated × 7 configs
-            ≈ 200M ops × O(L=240),~3-5 分钟 with numpy vectorization
+Compute cost: 50K training, mean length-bucket size ~3K x 9216 generated x 7
+              configs ~= 200M ops x O(L=240), ~3-5 min with numpy vectorization.
 """
 
 import json
@@ -100,7 +103,7 @@ def load_train_by_length():
     out = {}
     for L, seqs in by_len.items():
         if len(seqs) < 5:
-            continue   # 太少,跳过这个长度
+            continue   # too few sequences; skip this length
         out[L] = np.stack(seqs)
     return out
 
@@ -121,7 +124,7 @@ def min_hamming_to_train(gen_array, train_by_len):
 def analyze_config(name, samples_dir_name, display, train_by_len):
     samples_dir = RESULTS_ROOT / samples_dir_name
     if not samples_dir.exists():
-        print(f"  ️  {samples_dir} not found — skipping")
+        print(f"  {samples_dir} not found — skipping")
         return None
 
     print(f"\n-> {display}")
@@ -153,7 +156,7 @@ def analyze_config(name, samples_dir_name, display, train_by_len):
     print(f"   {n_total} sequences in {elapsed:.1f}s "
           f"({n_no_length_match} skipped — no length match in train subset)")
     print(f"   Hamming to nearest training seq:")
-    print(f"      min     : {arr.min()}   ← 0 = exact match")
+    print(f"      min     : {arr.min()}   (0 = exact match)")
     print(f"      max     : {arr.max()}")
     print(f"      mean    : {arr.mean():.1f}")
     print(f"      p25     : {np.percentile(arr, 25):.0f}")
