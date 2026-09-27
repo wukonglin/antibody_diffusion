@@ -1,7 +1,6 @@
 # Multi-Condition Diffusion for Paired Antibody Sequences
 
-**CS 5782/4782 — Introduction to Deep Learning, Final Project (Spring 2026)**
-Cornell University · **Authors:** Yunqi Li, Yonglin Zhang
+** Cornell University · **Authors:** Shaowen Jiang, Yunqi Li, Yonglin Zhang
 
 > **TL;DR.** We re-implement and compare two conditional-diffusion language
 > models—**LD4LG** (Lovelace et al., NeurIPS 2023; continuous latent
@@ -18,8 +17,7 @@ Cornell University · **Authors:** Yunqi Li, Yonglin Zhang
 
 ## 1. Introduction
 
-This is the GitHub **re-implementation deliverable** for our CS 5782/4782
-final project. The repo re-implements and compares two papers on the same
+The repo re-implements and compares two papers on the same
 conditional sequence-generation task:
 
 - **Latent Diffusion for Language Generation (LD4LG).** Lovelace, J., Kishore,
@@ -54,7 +52,7 @@ the diversity axis. See `report/` for the full 2-page analysis.
 ## 3. GitHub Contents
 
 ```
-cs4782-final-project/
+antibody-diffusion/
 ├── README.md                       this file
 ├── LICENSE                         MIT
 ├── requirements.txt
@@ -113,8 +111,8 @@ training memorization checks across all 9,216 generated sequences.
 
 ```bash
 # 1. Clone + env (Python 3.10+, CUDA 11.8+)
-git clone https://github.com/yunqi-susi-li/cs4782-final-project.git
-cd cs4782-final-project
+git clone https://github.com/yunqi-susi-li/antibody-diffusion.git
+cd antibody-diffusion
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
@@ -235,8 +233,7 @@ we saw across the 18 stratification cells.
 
 ## 9. Acknowledgements
 
-This project was developed at Cornell University as coursework for
-**CS 5782/4782 — Introduction to Deep Learning** (Spring 2026). We thank the
+This project originated as a final project for Cornell CS 5782/4782 — Introduction to Deep Learning (Spring 2026) and was subsequently extended beyond the original course scope. We thank the
 course instructors, **Prof. Kilian Weinberger** and **Prof. Wei-Chiu Ma**,
 for their guidance and feedback throughout the semester, and especially
 Prof. Weinberger for introducing **Latent Diffusion for Language Generation**
