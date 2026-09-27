@@ -1,6 +1,6 @@
 # Multi-Condition Diffusion for Paired Antibody Sequences
 
-** Cornell University · **Authors:** Shaowen Jiang, Yunqi Li, Yonglin Zhang
+**Authors:** Yunqi Li, Yonglin Zhang | Cornell University
 
 > **TL;DR.** We re-implement and compare two conditional-diffusion language
 > models—**LD4LG** (Lovelace et al., NeurIPS 2023; continuous latent
